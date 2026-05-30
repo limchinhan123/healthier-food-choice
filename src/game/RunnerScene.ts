@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { healthyFoodLevel } from '../data/healthyFoodLevel';
 import { AudioGuide } from './AudioGuide';
-import type { FoodDefinition, LevelDefinition, LevelZone, RouteMoment, SpeedMode } from './types';
+import type { FoodDefinition, LevelDefinition, LevelZone, PlayerMode, RouteMoment, SpeedMode } from './types';
 
 const GAME_WIDTH = 1600;
 const GAME_HEIGHT = 900;
@@ -24,11 +24,17 @@ const ROUTE_END_PADDING = 1120;
 const ROUTE_MIN_SPACING = 380;
 const ROUTE_MAX_SPACING = 610;
 const ROUTE_MILESTONES = 6;
+const RAE_PLAYER_SCALE = 0.72;
+const ZOE_LEAD_SCALE = 0.72;
+const ZOE_COMPANION_SCALE = 0.67;
+const ZOE_COMPANION_OFFSET_X = 88;
+const ZOE_COMPANION_OFFSET_Y = 82;
 const SPEEDS: Record<SpeedMode, number> = {
   practice: 112,
   cozy: 136,
   adventure: 162,
 };
+const PLAYER_MODES = new Set<PlayerMode>(['pair', 'rae', 'cousin']);
 
 const FAMILY_SUPPORTERS = [
   { key: 'daddy', zoneIndex: 0, scale: 0.5 },
@@ -66,6 +72,7 @@ type RunnerDebugState = {
     hit: number;
     prepared: number;
   };
+  playerMode: PlayerMode;
   playerScreenX: number;
   playerX: number;
   routeSeed: number;
@@ -82,6 +89,7 @@ export class RunnerScene extends Phaser.Scene {
   private level: LevelDefinition = healthyFoodLevel;
   private audio = new AudioGuide();
   private player!: Phaser.Physics.Arcade.Sprite;
+  private companion?: Phaser.GameObjects.Sprite;
   private spaceKey!: Phaser.Input.Keyboard.Key;
   private pauseKey!: Phaser.Input.Keyboard.Key;
   private collectibles!: Phaser.Physics.Arcade.Group;
@@ -95,6 +103,7 @@ export class RunnerScene extends Phaser.Scene {
   private progressDots: Phaser.GameObjects.Arc[] = [];
   private routeMoments: RouteMoment[] = [];
   private currentSpeedMode: SpeedMode = 'cozy';
+  private playerMode: PlayerMode = 'pair';
   private muted = false;
   private currentZoneId = 'school';
   private stars = 0;
@@ -115,9 +124,12 @@ export class RunnerScene extends Phaser.Scene {
     super('RunnerScene');
   }
 
-  init(data: { speedMode?: SpeedMode } = {}) {
+  init(data: { speedMode?: SpeedMode; playerMode?: PlayerMode } = {}) {
     if (data.speedMode && data.speedMode in SPEEDS) {
       this.currentSpeedMode = data.speedMode;
+    }
+    if (data.playerMode && PLAYER_MODES.has(data.playerMode)) {
+      this.playerMode = data.playerMode;
     }
   }
 
@@ -168,6 +180,7 @@ export class RunnerScene extends Phaser.Scene {
     this.audio = new AudioGuide();
     this.audio.setMuted(this.muted);
     this.progressDots = [];
+    this.companion = undefined;
     this.routeSeed = Date.now() + Math.floor(Math.random() * 100000);
     this.routeMoments = this.createRandomRoute();
     this.currentZoneId = this.level.zones[0]?.id ?? 'school';
@@ -186,6 +199,7 @@ export class RunnerScene extends Phaser.Scene {
   }
 
   update() {
+    this.syncCompanionToPlayer();
     if (!this.started || this.parentPaused || this.recapActive || this.finished) return;
 
     this.player.setVelocityX(SPEEDS[this.currentSpeedMode]);
@@ -1265,6 +1279,45 @@ export class RunnerScene extends Phaser.Scene {
   }
 
   private createPlayer() {
+    this.createPlayerAnimations();
+    const cousinLead = this.playerMode === 'cousin';
+    this.player = this.physics.add.sprite(
+      PLAYER_START_X,
+      cousinLead ? GROUND_Y - 102 : GROUND_Y - 116,
+      cousinLead ? 'supporter-zoe-wave-0' : 'baby-rae',
+    )
+      .setScale(cousinLead ? ZOE_LEAD_SCALE : RAE_PLAYER_SCALE)
+      .setDepth(20);
+    this.playHeroAnimation('idle');
+    this.player.setCollideWorldBounds(false);
+    const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
+    if (cousinLead) {
+      playerBody.setSize(58, 116);
+      playerBody.setOffset(27, 66);
+    } else {
+      playerBody.setSize(74, 118);
+      playerBody.setOffset(59, 68);
+    }
+    this.player.setMaxVelocity(240, 900);
+
+    if (this.playerMode === 'pair') {
+      this.createCompanion();
+    }
+
+    const groundCollider = this.physics.add.staticGroup();
+    const groundBody = this.add.rectangle(
+      this.level.worldLength / 2,
+      GROUND_Y + 50,
+      this.level.worldLength,
+      100,
+      0x000000,
+      0,
+    );
+    groundCollider.add(groundBody);
+    this.physics.add.collider(this.player, groundCollider);
+  }
+
+  private createPlayerAnimations() {
     if (!this.anims.exists('rae-run')) {
       this.anims.create({
         key: 'rae-run',
@@ -1290,27 +1343,96 @@ export class RunnerScene extends Phaser.Scene {
       });
     }
 
-    this.player = this.physics.add.sprite(PLAYER_START_X, GROUND_Y - 116, 'baby-rae')
-      .setScale(0.72)
-      .setDepth(20);
-    this.player.play('rae-idle');
-    this.player.setCollideWorldBounds(false);
-    const playerBody = this.player.body as Phaser.Physics.Arcade.Body;
-    playerBody.setSize(74, 118);
-    playerBody.setOffset(59, 68);
-    this.player.setMaxVelocity(240, 900);
+    if (!this.anims.exists('zoe-run')) {
+      this.anims.create({
+        key: 'zoe-run',
+        frames: [
+          { key: 'supporter-zoe-wave-0' },
+          { key: 'supporter-zoe-wave-1' },
+          { key: 'supporter-zoe-wave-2' },
+          { key: 'supporter-zoe-wave-1' },
+        ],
+        frameRate: 9,
+        repeat: -1,
+      });
+    }
+    if (!this.anims.exists('zoe-idle')) {
+      this.anims.create({
+        key: 'zoe-idle',
+        frames: [
+          { key: 'supporter-zoe-wave-0' },
+          { key: 'supporter-zoe-wave-1' },
+          { key: 'supporter-zoe-wave-2' },
+          { key: 'supporter-zoe-wave-1' },
+        ],
+        frameRate: 4,
+        repeat: -1,
+      });
+    }
+    if (!this.anims.exists('zoe-jump')) {
+      this.anims.create({
+        key: 'zoe-jump',
+        frames: [{ key: 'supporter-zoe-wave-2' }],
+        frameRate: 1,
+        repeat: 0,
+      });
+    }
+  }
 
-    const groundCollider = this.physics.add.staticGroup();
-    const groundBody = this.add.rectangle(
-      this.level.worldLength / 2,
-      GROUND_Y + 50,
-      this.level.worldLength,
-      100,
-      0x000000,
-      0,
+  private createCompanion() {
+    this.companion = this.add.sprite(
+      this.player.x - ZOE_COMPANION_OFFSET_X,
+      this.player.y + ZOE_COMPANION_OFFSET_Y,
+      'supporter-zoe-wave-0',
+    )
+      .setOrigin(0.5, 1)
+      .setScale(ZOE_COMPANION_SCALE)
+      .setDepth(19);
+    this.companion.play('zoe-idle');
+    this.syncCompanionToPlayer();
+  }
+
+  private playHeroAnimation(state: 'idle' | 'run' | 'jump', ignoreIfPlaying = false) {
+    const leadPrefix = this.playerMode === 'cousin' ? 'zoe' : 'rae';
+    this.player.play(`${leadPrefix}-${state}`, ignoreIfPlaying);
+    if (this.companion) {
+      this.companion.play(`zoe-${state}`, ignoreIfPlaying);
+    }
+  }
+
+  private syncCompanionToPlayer() {
+    if (!this.companion) return;
+    const runningBob = this.started && !this.parentPaused && !this.finished ? Math.sin(this.time.now / 95) * 2 : 0;
+    const idleTilt = Math.sin(this.time.now / 360) * 1.1;
+    this.companion.setPosition(
+      this.player.x - ZOE_COMPANION_OFFSET_X,
+      this.player.y + ZOE_COMPANION_OFFSET_Y + runningBob,
     );
-    groundCollider.add(groundBody);
-    this.physics.add.collider(this.player, groundCollider);
+    this.companion.setAngle(idleTilt);
+  }
+
+  private tintHero(color: number) {
+    this.player.setTint(color);
+    this.companion?.setTint(color);
+  }
+
+  private clearHeroTint() {
+    this.player.clearTint();
+    this.companion?.clearTint();
+  }
+
+  private heroLabel() {
+    if (this.playerMode === 'pair') return 'Rae and Zoe';
+    if (this.playerMode === 'cousin') return 'Zoe';
+    return 'Rae';
+  }
+
+  private viewportWidth() {
+    return Math.max(GAME_WIDTH, this.scale.gameSize.width || GAME_WIDTH);
+  }
+
+  private viewportHeight() {
+    return Math.max(GAME_HEIGHT, this.scale.gameSize.height || GAME_HEIGHT);
   }
 
   private createHud() {
@@ -1436,10 +1558,11 @@ export class RunnerScene extends Phaser.Scene {
   }
 
   private createProgressTrail() {
-    const startX = 560;
+    const viewWidth = this.viewportWidth();
     const y = 68;
     const spacing = 140;
     const lineWidth = (ROUTE_MILESTONES - 1) * spacing;
+    const startX = Math.max(560, viewWidth / 2 - lineWidth / 2);
     this.add.line(startX + lineWidth / 2, y, 0, 0, lineWidth, 0, 0xffffff, 0.86)
       .setLineWidth(12)
       .setScrollFactor(0)
@@ -1451,7 +1574,7 @@ export class RunnerScene extends Phaser.Scene {
         .setStrokeStyle(8, 0xffffff, 0.92);
       this.progressDots.push(dot);
     }
-    this.add.text(startX - 58, y, '👧', { fontSize: '40px' })
+    this.add.text(startX - 58, y, this.playerMode === 'pair' ? '👧👧' : '👧', { fontSize: '40px' })
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(105);
@@ -1462,7 +1585,8 @@ export class RunnerScene extends Phaser.Scene {
   }
 
   private createSpacePrompt() {
-    const container = this.add.container(GAME_WIDTH / 2, GAME_HEIGHT - 78)
+    const viewHeight = this.viewportHeight();
+    const container = this.add.container(this.viewportWidth() / 2, viewHeight - 78)
       .setScrollFactor(0)
       .setDepth(110);
     const bg = this.add.graphics();
@@ -1483,7 +1607,7 @@ export class RunnerScene extends Phaser.Scene {
     );
     this.tweens.add({
       targets: container,
-      y: GAME_HEIGHT - 88,
+      y: viewHeight - 88,
       duration: 850,
       yoyo: true,
       repeat: -1,
@@ -1493,10 +1617,12 @@ export class RunnerScene extends Phaser.Scene {
   }
 
   private createPauseOverlay() {
-    const overlay = this.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2)
+    const viewWidth = this.viewportWidth();
+    const viewHeight = this.viewportHeight();
+    const overlay = this.add.container(viewWidth / 2, viewHeight / 2)
       .setScrollFactor(0)
       .setDepth(160);
-    overlay.add(this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x163140, 0.3));
+    overlay.add(this.add.rectangle(0, 0, viewWidth, viewHeight, 0x163140, 0.3));
     overlay.add(this.add.rectangle(0, 0, 430, 170, 0xffffff, 0.92).setStrokeStyle(4, 0xffa9c5));
     overlay.add(this.add.text(0, -34, 'Paused', {
       fontFamily: 'Arial Rounded MT Bold, Arial, sans-serif',
@@ -1514,12 +1640,14 @@ export class RunnerScene extends Phaser.Scene {
   }
 
   private createRecapOverlay() {
-    const overlay = this.add.container(GAME_WIDTH / 2, GAME_HEIGHT / 2)
+    const viewWidth = this.viewportWidth();
+    const viewHeight = this.viewportHeight();
+    const overlay = this.add.container(viewWidth / 2, viewHeight / 2)
       .setScrollFactor(0)
       .setDepth(170);
-    overlay.add(this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x153544, 0.22));
+    overlay.add(this.add.rectangle(0, 0, viewWidth, viewHeight, 0x153544, 0.22));
     overlay.add(this.add.rectangle(0, 0, 720, 360, 0xfffbf0, 0.96).setStrokeStyle(5, 0xffa2c0));
-    overlay.add(this.add.text(0, -120, 'Rae filled the basket!', {
+    overlay.add(this.add.text(0, -120, `${this.heroLabel()} filled the basket!`, {
       fontFamily: 'Arial Rounded MT Bold, Arial, sans-serif',
       fontSize: '42px',
       color: '#344050',
@@ -1568,6 +1696,12 @@ export class RunnerScene extends Phaser.Scene {
       this.muted = Boolean((event as CustomEvent<{ muted: boolean }>).detail.muted);
       this.audio.setMuted(this.muted);
     };
+    const setPlayerMode = (event: Event) => {
+      const mode = (event as CustomEvent<{ mode: PlayerMode }>).detail.mode;
+      if (!PLAYER_MODES.has(mode) || mode === this.playerMode) return;
+      this.playerMode = mode;
+      this.resetRun();
+    };
     const resetRun = () => this.resetRun();
     const finishForQa = () => {
       if (import.meta.env.DEV) this.finishLevel();
@@ -1576,6 +1710,7 @@ export class RunnerScene extends Phaser.Scene {
     window.addEventListener('hfcg:toggle-pause', togglePause);
     window.addEventListener('hfcg:set-speed', setSpeed);
     window.addEventListener('hfcg:set-muted', setMuted);
+    window.addEventListener('hfcg:set-player-mode', setPlayerMode);
     window.addEventListener('hfcg:reset-run', resetRun);
     window.addEventListener('hfcg:qa-finish', finishForQa);
 
@@ -1583,6 +1718,7 @@ export class RunnerScene extends Phaser.Scene {
       window.removeEventListener('hfcg:toggle-pause', togglePause);
       window.removeEventListener('hfcg:set-speed', setSpeed);
       window.removeEventListener('hfcg:set-muted', setMuted);
+      window.removeEventListener('hfcg:set-player-mode', setPlayerMode);
       window.removeEventListener('hfcg:reset-run', resetRun);
       window.removeEventListener('hfcg:qa-finish', finishForQa);
       this.audio.destroy();
@@ -1593,7 +1729,7 @@ export class RunnerScene extends Phaser.Scene {
     this.physics.resume();
     this.tweens.resumeAll();
     window.dispatchEvent(new CustomEvent('hfcg:pause-state', { detail: { paused: false } }));
-    this.scene.restart({ speedMode: this.currentSpeedMode });
+    this.scene.restart({ speedMode: this.currentSpeedMode, playerMode: this.playerMode });
   }
 
   private handleSpace() {
@@ -1605,14 +1741,14 @@ export class RunnerScene extends Phaser.Scene {
     }
 
     if (this.finished) {
-      this.scene.restart({ speedMode: this.currentSpeedMode });
+      this.scene.restart({ speedMode: this.currentSpeedMode, playerMode: this.playerMode });
       return;
     }
 
     if (!this.started) {
       this.started = true;
       this.runStartedAt = this.time.now;
-      this.player.play('rae-run');
+      this.playHeroAnimation('run');
       this.player.setVelocityX(SPEEDS[this.currentSpeedMode]);
       this.audio.startMusic();
       this.audio.speakTiny('ready', 'Ready?');
@@ -1628,7 +1764,8 @@ export class RunnerScene extends Phaser.Scene {
     const nearGround = this.player.y >= GROUND_Y - 138;
     if (body.blocked.down || body.touching.down || nearGround) {
       this.player.setVelocityY(-720);
-      this.player.play('rae-jump', true);
+      this.playHeroAnimation('jump', true);
+      this.syncCompanionToPlayer();
       this.audio.jump();
       this.tweens.add({
         targets: this.spacePrompt,
@@ -1639,7 +1776,7 @@ export class RunnerScene extends Phaser.Scene {
       });
       this.time.delayedCall(520, () => {
         if (!this.finished && !this.recapActive && this.started) {
-          this.player.play('rae-run', true);
+          this.playHeroAnimation('run', true);
         }
       });
     }
@@ -1687,8 +1824,8 @@ export class RunnerScene extends Phaser.Scene {
     this.updateHud();
     this.showTinyFeedback(icon.x, ITEM_GROUND_BOTTOM_Y - 130, 'Small bites', '#f2a14a');
     this.player.setVelocityY(-180);
-    this.player.setTint(0xffd9a8);
-    this.time.delayedCall(220, () => this.player.clearTint());
+    this.tintHero(0xffd9a8);
+    this.time.delayedCall(220, () => this.clearHeroTint());
 
     this.tweens.add({
       targets: visual,
@@ -1768,6 +1905,7 @@ export class RunnerScene extends Phaser.Scene {
         x: Math.round(nextObstacle.x),
       } : null,
       obstacleStats,
+      playerMode: this.playerMode,
       playerScreenX: Math.round(this.player.x - this.cameras.main.scrollX),
       playerX: Math.round(this.player.x),
       routeSeed: this.routeSeed,
@@ -1783,7 +1921,7 @@ export class RunnerScene extends Phaser.Scene {
     const targetScrollX = Phaser.Math.Clamp(
       this.player.x - 280,
       0,
-      Math.max(0, this.level.worldLength - GAME_WIDTH),
+      Math.max(0, this.level.worldLength - this.viewportWidth()),
     );
     this.lastCameraScrollX = Phaser.Math.Linear(this.lastCameraScrollX, targetScrollX, 0.14);
     this.cameras.main.scrollX = this.lastCameraScrollX;
@@ -1902,6 +2040,7 @@ export class RunnerScene extends Phaser.Scene {
       this.physics.pause();
       this.tweens.pauseAll();
       this.player.anims.pause();
+      this.companion?.anims.pause();
       this.audio.pause();
     } else {
       if (this.pausedStartedAt > 0) {
@@ -1911,6 +2050,7 @@ export class RunnerScene extends Phaser.Scene {
       this.physics.resume();
       this.tweens.resumeAll();
       this.player.anims.resume();
+      this.companion?.anims.resume();
       this.audio.resume();
     }
     this.pauseOverlay.setVisible(this.parentPaused);
@@ -1921,7 +2061,7 @@ export class RunnerScene extends Phaser.Scene {
     if (this.finished) return;
     this.finished = true;
     this.player.setVelocity(0, 0);
-    this.player.play('rae-idle', true);
+    this.playHeroAnimation('idle', true);
     this.audio.rescue();
     this.audio.speakTiny('rescue', 'Yay!');
     this.cameras.main.pan(this.level.worldLength - 520, GAME_HEIGHT / 2, 900, 'Sine.easeInOut');
@@ -1947,7 +2087,9 @@ export class RunnerScene extends Phaser.Scene {
     this.recapActive = false;
     this.recapOverlay.setVisible(false);
     this.audio.speakTiny('helped', 'You helped them!');
-    const endText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 10, 'Yay Rae!', {
+    const viewWidth = this.viewportWidth();
+    const viewHeight = this.viewportHeight();
+    const endText = this.add.text(viewWidth / 2, viewHeight / 2 - 10, `Yay ${this.heroLabel()}!`, {
       fontFamily: 'Arial Rounded MT Bold, Arial, sans-serif',
       fontSize: '74px',
       color: '#ffffff',
@@ -1958,7 +2100,7 @@ export class RunnerScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(180);
-    const replayText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 82, 'Tap or SPACE to play again', {
+    const replayText = this.add.text(viewWidth / 2, viewHeight / 2 + 82, 'Tap or SPACE to play again', {
       fontFamily: 'Arial Rounded MT Bold, Arial, sans-serif',
       fontSize: '30px',
       color: '#ffffff',

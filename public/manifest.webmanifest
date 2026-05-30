@@ -1,0 +1,11 @@
+{
+  "name": "Health Food Choice Game",
+  "short_name": "Food Choice",
+  "description": "A Singapore-inspired preschool runner for learning everyday foods and small-bite treats.",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "start_url": "/",
+  "scope": "/",
+  "background_color": "#88dfff",
+  "theme_color": "#ff9ec6"
+}

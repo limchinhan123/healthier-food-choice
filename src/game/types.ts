@@ -1,5 +1,7 @@
 export type SpeedMode = 'practice' | 'cozy' | 'adventure';
 
+export type PlayerMode = 'pair' | 'rae' | 'cousin';
+
 export type FoodCategory = 'everyday' | 'treat';
 
 export interface FoodDefinition {

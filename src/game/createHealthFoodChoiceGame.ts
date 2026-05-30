@@ -9,8 +9,9 @@ export function createHealthFoodChoiceGame(parent: HTMLElement) {
     height: 900,
     backgroundColor: '#88dfff',
     scale: {
-      mode: Phaser.Scale.FIT,
+      mode: Phaser.Scale.EXPAND,
       autoCenter: Phaser.Scale.CENTER_BOTH,
+      fullscreenTarget: parent,
     },
     physics: {
       default: 'arcade',

@@ -33,11 +33,6 @@ select {
   height: 100dvh;
   display: grid;
   place-items: center;
-  padding:
-    env(safe-area-inset-top)
-    env(safe-area-inset-right)
-    env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
   background:
     radial-gradient(circle at 18% 12%, rgba(255, 199, 219, 0.24), transparent 34%),
     linear-gradient(145deg, #101820 0%, #1d3140 48%, #203f43 100%);
@@ -65,12 +60,15 @@ select {
 
 .parent-panel {
   position: absolute;
-  right: 16px;
-  bottom: 16px;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
   z-index: 4;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
+  max-width: calc(100vw - 32px);
   padding: 8px;
   border: 1px solid rgba(45, 57, 70, 0.14);
   border-radius: 8px;
@@ -110,7 +108,7 @@ select {
 }
 
 .panel-button,
-.speed-control select {
+.panel-control select {
   min-height: 36px;
   border: 1px solid rgba(34, 48, 61, 0.18);
   border-radius: 7px;
@@ -136,7 +134,7 @@ select {
   font-weight: 850;
 }
 
-.speed-control {
+.panel-control {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -145,26 +143,28 @@ select {
   font-weight: 800;
 }
 
-.speed-control select {
+.panel-control select {
   padding: 0 28px 0 10px;
 }
 
 @media (max-width: 760px) {
   .parent-panel {
-    right: 8px;
-    bottom: 8px;
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(8px, env(safe-area-inset-bottom));
     gap: 6px;
     transform-origin: right bottom;
     transform: scale(0.88);
   }
 }
 
-@media (orientation: portrait) and (max-width: 900px) {
-  .game-stage {
-    width: min(100vw, calc(100dvh * 16 / 9));
-    height: min(100dvh, calc(100vw * 9 / 16));
+@media (max-width: 1400px) and (min-height: 541px) {
+  .parent-panel {
+    transform-origin: right bottom;
+    transform: scale(0.76);
   }
+}
 
+@media (orientation: portrait) and (max-width: 900px) {
   .portrait-hint {
     display: grid;
   }
@@ -174,16 +174,49 @@ select {
   }
 }
 
+@media (pointer: coarse) and (orientation: landscape), (orientation: landscape) and (max-height: 540px) {
+  .app-shell {
+    display: block;
+    background: #102634;
+  }
+
+  .game-stage {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+
 @media (orientation: landscape) and (max-height: 540px) {
   .parent-panel {
-    right: 6px;
-    bottom: 6px;
+    right: max(6px, env(safe-area-inset-right));
+    bottom: max(6px, env(safe-area-inset-bottom));
+    width: 168px;
+    max-width: 168px;
+    flex-direction: column;
+    align-items: stretch;
     transform: scale(0.76);
   }
 
   .panel-button,
-  .speed-control select {
+  .panel-control select {
     min-height: 32px;
     font-size: 12px;
+  }
+
+  .panel-button {
+    width: 100%;
+    padding: 0 8px;
+  }
+
+  .panel-control {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .panel-control select {
+    width: 100%;
+    padding-left: 8px;
   }
 }
