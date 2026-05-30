@@ -1,0 +1,24 @@
+{
+  "name": "health-food-choice-game",
+  "version": "0.1.0",
+  "description": "A Singapore-inspired preschool food learning runner built with vibe-coding.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5175",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4175"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "phaser": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "latest",
+    "typescript": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest"
+  }
+}

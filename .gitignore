@@ -1,0 +1,10 @@
+node_modules/
+dist/
+qa/
+.DS_Store
+.env
+.env.*
+.vercel/
+*.log
+docs/media/screenshot-*.png
+.vercel

@@ -1,0 +1,86 @@
+import type { LevelDefinition } from '../game/types';
+
+const ZONE_WIDTH = 1600;
+
+const zoneCycle = [
+  { id: 'school', name: 'HDB Playground', sky: 0x83d8ff, accent: 0xf8b9cc },
+  { id: 'mart', name: 'Sheng Siong Mart', sky: 0x89ddff, accent: 0x54bd74 },
+  { id: 'foodcourt', name: 'Koufu Food Court', sky: 0x8fdfff, accent: 0xf2b84b },
+  { id: 'bay', name: 'Marina Bay', sky: 0x91dcff, accent: 0x7bb8dd },
+  { id: 'zoo', name: 'Singapore Zoo', sky: 0x8bdcbf, accent: 0x6dba62 },
+  { id: 'sparkletots', name: 'Sparkletots School', sky: 0x83d8ff, accent: 0xff9ec6 },
+  { id: 'nuh', name: 'National University Hospital', sky: 0x90dcff, accent: 0x5bb5d9 },
+  { id: 'holland', name: 'Holland Village', sky: 0x8fdfff, accent: 0xf08a55 },
+  { id: 'buonavista', name: 'Buona Vista MRT', sky: 0x8ad9ff, accent: 0x57b879 },
+  { id: 'botanic', name: 'Botanic Gardens', sky: 0x8bdcbf, accent: 0x73c86b },
+];
+
+const zones = Array.from({ length: 11 }, (_, index) => {
+  const zone = zoneCycle[index % zoneCycle.length];
+  return {
+    ...zone,
+    startX: index * ZONE_WIDTH,
+    endX: (index + 1) * ZONE_WIDTH,
+  };
+});
+
+export const healthyFoodLevel: LevelDefinition = {
+  id: 'healthy-food-1',
+  title: 'Healthy Food Adventure',
+  worldLength: ZONE_WIDTH * zones.length,
+  basketGoal: 28,
+  zones,
+  foods: {
+    apple: { id: 'apple', label: 'Apple', icon: '🍎', category: 'everyday', voice: 'Apple!', starValue: 1 },
+    banana: { id: 'banana', label: 'Banana', icon: '🍌', category: 'everyday', voice: 'Banana!', starValue: 1 },
+    carrot: { id: 'carrot', label: 'Carrot', icon: '🥕', category: 'everyday', voice: 'Carrot!', starValue: 1 },
+    broccoli: { id: 'broccoli', label: 'Broccoli', icon: '🥦', category: 'everyday', voice: 'Broccoli!', starValue: 1 },
+    water: { id: 'water', label: 'Water', icon: '💧', category: 'everyday', voice: 'Water!', starValue: 1 },
+    milk: { id: 'milk', label: 'Milk', icon: '🥛', category: 'everyday', voice: 'Milk!', starValue: 1 },
+    bread: { id: 'bread', label: 'Bread', icon: '🍞', category: 'everyday', voice: 'Bread!', starValue: 1 },
+    chicken: { id: 'chicken', label: 'Chicken', icon: '🍗', category: 'everyday', voice: 'Chicken!', starValue: 1 },
+    fish: { id: 'fish', label: 'Fish', icon: '🐟', category: 'everyday', voice: 'Fish!', starValue: 1 },
+    strawberry: { id: 'strawberry', label: 'Strawberry', icon: '🍓', category: 'everyday', voice: 'Strawberry!', starValue: 1 },
+    blueberry: { id: 'blueberry', label: 'Blueberry', icon: '🫐', category: 'everyday', voice: 'Blueberry!', starValue: 1 },
+    watermelon: { id: 'watermelon', label: 'Watermelon', icon: '🍉', category: 'everyday', voice: 'Watermelon!', starValue: 1 },
+    cucumber: { id: 'cucumber', label: 'Cucumber', icon: '🥒', category: 'everyday', voice: 'Cucumber!', starValue: 1 },
+    nuts: { id: 'nuts', label: 'Nuts', icon: '🥜', category: 'everyday', voice: 'Nuts!', starValue: 1 },
+    yogurt: { id: 'yogurt', label: 'Yogurt', icon: '🥣', category: 'everyday', voice: 'Yogurt!', starValue: 1 },
+    cheese: { id: 'cheese', label: 'Cheese', icon: '🧀', category: 'everyday', voice: 'Cheese!', starValue: 1 },
+    cereal: { id: 'cereal', label: 'Cereal', icon: '🥣', category: 'everyday', voice: 'Cereal!', starValue: 1 },
+    beef: { id: 'beef', label: 'Beef', icon: '🥩', category: 'everyday', voice: 'Beef!', starValue: 1 },
+    tofu: { id: 'tofu', label: 'Tofu', icon: '🍲', category: 'everyday', voice: 'Tofu!', starValue: 1 },
+    vegetables: { id: 'vegetables', label: 'Vegetables', icon: '🥬', category: 'everyday', voice: 'Vegetables!', starValue: 1 },
+    soyMilk: { id: 'soyMilk', label: 'Soy Milk', icon: '🥛', category: 'everyday', voice: 'Soy milk!', starValue: 1 },
+    wontonNoodles: {
+      id: 'wontonNoodles',
+      label: 'Wonton Noodles',
+      icon: '🍜',
+      category: 'everyday',
+      voice: 'Noodles!',
+      starValue: 1,
+    },
+    chickenRice: {
+      id: 'chickenRice',
+      label: 'Chicken Rice',
+      icon: '🍚',
+      category: 'everyday',
+      voice: 'Chicken rice!',
+      starValue: 1,
+    },
+    eggplant: { id: 'eggplant', label: 'Eggplant', icon: '🍆', category: 'everyday', voice: 'Eggplant!', starValue: 1 },
+    sushi: { id: 'sushi', label: 'Sushi', icon: '🍣', category: 'everyday', voice: 'Sushi!', starValue: 1 },
+    chawanmushi: { id: 'chawanmushi', label: 'Chawanmushi', icon: '🍮', category: 'everyday', voice: 'Chawanmushi!', starValue: 1 },
+    vitaminC: { id: 'vitaminC', label: 'Vitamin C', icon: '🍊', category: 'everyday', voice: 'Vitamin C!', starValue: 1 },
+    pasta: { id: 'pasta', label: 'Pasta', icon: '🍝', category: 'everyday', voice: 'Pasta!', starValue: 1 },
+    lollipop: { id: 'lollipop', label: 'Lollipop', icon: '🍭', category: 'treat', voice: 'Lollipop. Small bites.', starValue: 0 },
+    candy: { id: 'candy', label: 'Candy', icon: '🍬', category: 'treat', voice: 'Candy. Small bites.', starValue: 0 },
+    soda: { id: 'soda', label: 'Sweet drink', icon: '🥤', category: 'treat', voice: 'Sweet drink. Small bites.', starValue: 0 },
+    fries: { id: 'fries', label: 'Fries', icon: '🍟', category: 'treat', voice: 'Fries. Small bites.', starValue: 0 },
+    donut: { id: 'donut', label: 'Donut', icon: '🍩', category: 'treat', voice: 'Donut. Small bites.', starValue: 0 },
+    chips: { id: 'chips', label: 'Chips', icon: '🍪', category: 'treat', voice: 'Chips. Small bites.', starValue: 0 },
+    cupcake: { id: 'cupcake', label: 'Cupcake', icon: '🧁', category: 'treat', voice: 'Cupcake. Small bites.', starValue: 0 },
+    cookie: { id: 'cookie', label: 'Cookie', icon: '🍪', category: 'treat', voice: 'Cookie. Small bites.', starValue: 0 },
+  },
+  route: [],
+};
