@@ -1,10 +1,12 @@
-# Healthy Food Choice Game
+# Healthier Food Choice
 
-![Health Food Choice Game gameplay](docs/media/gameplay.gif)
+![Healthier Food Choice gameplay](docs/media/gameplay.gif)
 
 **A Singapore-inspired preschool runner built through vibe-coding for my daughter Rae.**
 
-**Play it here:** [health-food-choice-game.vercel.app](https://health-food-choice-game.vercel.app)
+**Play it here:** [healthier-food-choice.vercel.app](https://healthier-food-choice.vercel.app)
+
+The previous link still works: [health-food-choice-game.vercel.app](https://health-food-choice-game.vercel.app)
 
 This started as a dad idea: could I turn Rae's favorite people, places, and foods into a simple game that teaches without feeling like homework? The result is a one-button adventure where Rae runs through familiar Singapore scenes, collects everyday foods, learns "small bites" for treats, and gets cheered on by family NPCs.
 
@@ -12,7 +14,7 @@ The goal is not to build a perfect commercial game. The goal is to show how fast
 
 ## What It Is
 
-Health Food Choice Game is a side-scrolling runner for toddlers and preschoolers:
+Healthier Food Choice is a side-scrolling runner for toddlers and preschoolers:
 
 - One action: tap or press `Space`.
 - Landscape-first mobile/tablet/iPad play.

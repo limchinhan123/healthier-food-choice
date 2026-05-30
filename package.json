@@ -1,7 +1,7 @@
 {
-  "name": "health-food-choice-game",
+  "name": "healthier-food-choice",
   "version": "0.1.0",
-  "description": "A Singapore-inspired preschool food learning runner built with vibe-coding.",
+  "description": "A Singapore-inspired preschool healthier food learning runner built with vibe-coding.",
   "private": true,
   "type": "module",
   "scripts": {

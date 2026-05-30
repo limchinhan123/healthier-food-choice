@@ -74,7 +74,7 @@ export function App() {
     <main className="app-shell">
       <section
         className="game-stage"
-        aria-label="Health Food Choice Game"
+        aria-label="Healthier Food Choice"
         onPointerDown={requestMobileFullscreen}
       >
         <div ref={gameHostRef} className="game-host" />
