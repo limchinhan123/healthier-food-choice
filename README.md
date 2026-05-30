@@ -1,4 +1,4 @@
-# Health Food Choice Game
+# Healthy Food Choice Game
 
 ![Health Food Choice Game gameplay](docs/media/gameplay.gif)
 
