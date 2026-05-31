@@ -10,6 +10,7 @@ export interface FoodDefinition {
   icon: string;
   category: FoodCategory;
   voice: string;
+  feedback?: string;
   starValue: number;
 }
 

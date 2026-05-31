@@ -1130,7 +1130,7 @@ export class RunnerScene extends Phaser.Scene {
     const pad = this.add.ellipse(x, ITEM_GROUND_BOTTOM_Y - 18, 116, 42, 0xffd0bd, 0.72)
       .setDepth(7);
     const visual = this.add.text(x, ITEM_GROUND_BOTTOM_Y, food.icon, {
-      fontSize: '72px',
+      fontSize: food.icon.includes('🧃') ? '56px' : '72px',
       fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
       align: 'center',
     })
@@ -1822,7 +1822,7 @@ export class RunnerScene extends Phaser.Scene {
     this.audio.smallBite();
     this.audio.speakTiny(`treat-${food.id}-${Math.round(icon.x)}`, food.voice);
     this.updateHud();
-    this.showTinyFeedback(icon.x, ITEM_GROUND_BOTTOM_Y - 130, 'Small bites', '#f2a14a');
+    this.showTinyFeedback(icon.x, ITEM_GROUND_BOTTOM_Y - 130, food.feedback ?? 'Small bites', '#f2a14a');
     this.player.setVelocityY(-180);
     this.tintHero(0xffd9a8);
     this.time.delayedCall(220, () => this.clearHeroTint());
