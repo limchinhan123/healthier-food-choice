@@ -57,6 +57,8 @@ type ObstacleObject = Phaser.GameObjects.Zone & {
   body: Phaser.Physics.Arcade.Body;
 };
 
+type FoodVisual = Phaser.GameObjects.Text | Phaser.GameObjects.Image;
+
 type RunnerDebugState = {
   basket: number;
   cameraScrollX: number;
@@ -148,6 +150,11 @@ export class RunnerScene extends Phaser.Scene {
     this.load.image('bg-holland', '/assets/backgrounds/zone-holland-village.png');
     this.load.image('bg-buonavista', '/assets/backgrounds/zone-buona-vista.png');
     this.load.image('bg-botanic', '/assets/backgrounds/zone-botanic-gardens.png');
+    this.load.image('food-dragon-fruit', '/assets/foods/dragon-fruit.png');
+    this.load.image('food-sunny-side-up-egg', '/assets/foods/sunny-side-up-egg.png');
+    this.load.image('food-cheeseburger', '/assets/foods/cheeseburger.png');
+    this.load.image('food-cup-noodles', '/assets/foods/cup-noodles.png');
+    this.load.image('food-ketchup', '/assets/foods/ketchup.png');
     FAMILY_SUPPORTERS.forEach((supporter) => {
       [0, 1, 2].forEach((frame) => {
         this.load.image(
@@ -1098,13 +1105,7 @@ export class RunnerScene extends Phaser.Scene {
       ease: 'Sine.inOut',
     });
 
-    const visual = this.add.text(x, bottomY, food.icon, {
-      fontSize: lane === 'high' ? '72px' : '60px',
-      fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
-      align: 'center',
-    })
-      .setOrigin(0.5, 1)
-      .setDepth(10);
+    const visual = this.createFoodVisual(x, bottomY, food, lane === 'high' ? 72 : 60);
 
     const hitZone = this.add.zone(x, lane === 'high' ? centerY : ITEM_LOW_BODY_Y, 96, 100) as CollectibleObject;
     hitZone.setData('food', food);
@@ -1129,13 +1130,12 @@ export class RunnerScene extends Phaser.Scene {
   private createObstacle(x: number, food: FoodDefinition) {
     const pad = this.add.ellipse(x, ITEM_GROUND_BOTTOM_Y - 18, 116, 42, 0xffd0bd, 0.72)
       .setDepth(7);
-    const visual = this.add.text(x, ITEM_GROUND_BOTTOM_Y, food.icon, {
-      fontSize: food.icon.includes('🧃') ? '56px' : '72px',
-      fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
-      align: 'center',
-    })
-      .setOrigin(0.5, 1)
-      .setDepth(10);
+    const visual = this.createFoodVisual(
+      x,
+      ITEM_GROUND_BOTTOM_Y,
+      food,
+      food.icon.includes('🧃') ? 56 : 72,
+    );
 
     const hitZone = this.add.zone(x, ITEM_LOW_BODY_Y, 90, 126) as ObstacleObject;
     hitZone.setData('food', food);
@@ -1209,6 +1209,24 @@ export class RunnerScene extends Phaser.Scene {
         ease: 'Sine.inOut',
       });
     });
+  }
+
+  private createFoodVisual(x: number, bottomY: number, food: FoodDefinition, fontSize: number): FoodVisual {
+    if (food.textureKey) {
+      const size = food.textureSize ?? fontSize;
+      return this.add.image(x, bottomY, food.textureKey)
+        .setDisplaySize(size, size)
+        .setOrigin(0.5, 1)
+        .setDepth(10);
+    }
+
+    return this.add.text(x, bottomY, food.icon, {
+      fontSize: `${fontSize}px`,
+      fontFamily: 'Apple Color Emoji, Segoe UI Emoji, sans-serif',
+      align: 'center',
+    })
+      .setOrigin(0.5, 1)
+      .setDepth(10);
   }
 
   private createFamilySupporters() {
@@ -1787,7 +1805,7 @@ export class RunnerScene extends Phaser.Scene {
     icon.setData('collected', true);
     const food = icon.getData('food') as FoodDefinition;
     const glow = icon.getData('glow') as Phaser.GameObjects.Ellipse;
-    const visual = icon.getData('visual') as Phaser.GameObjects.Text;
+    const visual = icon.getData('visual') as FoodVisual;
     this.basket += 1;
     this.stars += food.starValue;
     this.audio.collect();
@@ -1818,7 +1836,7 @@ export class RunnerScene extends Phaser.Scene {
     this.lastObstacleHitAt = now;
     icon.setData('hit', true);
     const food = icon.getData('food') as FoodDefinition;
-    const visual = icon.getData('visual') as Phaser.GameObjects.Text;
+    const visual = icon.getData('visual') as FoodVisual;
     this.audio.smallBite();
     this.audio.speakTiny(`treat-${food.id}-${Math.round(icon.x)}`, food.voice);
     this.updateHud();

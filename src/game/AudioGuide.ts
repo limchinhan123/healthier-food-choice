@@ -30,7 +30,8 @@ export class AudioGuide {
   private muted = false;
   private mood: ZoneMood = 'school';
   private spokenLabels = new Set<string>();
-  private lastSpeechAt = 0;
+  private speechQueue: SpeechSynthesisUtterance[] = [];
+  private speaking = false;
 
   unlock() {
     if (!this.context || this.context.state === 'closed') {
@@ -45,6 +46,8 @@ export class AudioGuide {
   setMuted(muted: boolean) {
     this.muted = muted;
     if (muted) {
+      this.speechQueue = [];
+      this.speaking = false;
       window.speechSynthesis.cancel();
     }
   }
@@ -135,28 +138,39 @@ export class AudioGuide {
   speakTiny(id: string, text: string) {
     if (this.muted || this.spokenLabels.has(id)) return;
     this.spokenLabels.add(id);
-    const now = window.performance.now();
-    const delay = Math.max(0, 520 - (now - this.lastSpeechAt));
-    this.lastSpeechAt = now + delay;
-    window.setTimeout(() => {
-      if (this.muted) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.92;
-      utterance.pitch = 1.25;
-      utterance.volume = 0.52;
-      window.speechSynthesis.speak(utterance);
-    }, delay);
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.92;
+    utterance.pitch = 1.25;
+    utterance.volume = 0.52;
+    this.speechQueue.push(utterance);
+    this.speakNext();
   }
 
   destroy() {
     this.stopMusic();
+    this.speechQueue = [];
+    this.speaking = false;
     window.speechSynthesis.cancel();
     const context = this.context;
     this.context = null;
     if (context && context.state !== 'closed') {
       void context.close().catch(() => undefined);
     }
+  }
+
+  private speakNext() {
+    if (this.muted || this.speaking) return;
+    const utterance = this.speechQueue.shift();
+    if (!utterance) return;
+
+    this.speaking = true;
+    const finish = () => {
+      this.speaking = false;
+      window.setTimeout(() => this.speakNext(), 90);
+    };
+    utterance.onend = finish;
+    utterance.onerror = finish;
+    window.speechSynthesis.speak(utterance);
   }
 
   private tone(

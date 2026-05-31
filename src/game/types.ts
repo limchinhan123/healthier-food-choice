@@ -11,6 +11,8 @@ export interface FoodDefinition {
   category: FoodCategory;
   voice: string;
   feedback?: string;
+  textureKey?: string;
+  textureSize?: number;
   starValue: number;
 }
 
